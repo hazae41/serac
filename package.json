@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/serac",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Garbage-collectable persistent key-value database for TypeScript",
   "homepage": "https://github.com/hazae41/serac",
   "repository": "github:hazae41/serac",
