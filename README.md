@@ -13,6 +13,7 @@ npm i @hazae41/serac
 ### Current features
 - 100% TypeScript and ESM
 - No external dependencies
+- Backed by IndexedDB
 - Garbage collection
 
 ## Usage
