@@ -3,7 +3,7 @@ import { Nullable } from "libs/nullable/index.js";
 
 export interface Row<T> {
   readonly value: T
-  readonly expiration: number
+  readonly expiration?: number
 }
 
 export class Database {
@@ -49,13 +49,16 @@ export class Database {
     if (row == null)
       return
 
+    if (row.expiration == null)
+      return row.value
+
     if (row.expiration < Date.now())
       return
 
     return row.value
   }
 
-  async #setOrThrow<T>(store: IDBObjectStore, key: string, value: T, expiration: number) {
+  async #setOrThrow<T>(store: IDBObjectStore, key: string, value: T, expiration?: number) {
     await requestOrThrow(store.put({ value, expiration }, key))
   }
 
@@ -67,7 +70,7 @@ export class Database {
     return this.#transactOrThrow(store => this.#getOrThrow<T>(store, key), "readonly")
   }
 
-  async setOrThrow<T>(key: string, value: T, expiration: number): Promise<void> {
+  async setOrThrow<T>(key: string, value: T, expiration?: number): Promise<void> {
     return this.#transactOrThrow(store => this.#setOrThrow<T>(store, key, value, expiration), "readwrite")
   }
 
