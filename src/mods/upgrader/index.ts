@@ -1,0 +1,1 @@
+export type Upgrader = (database: IDBDatabase, event: IDBVersionChangeEvent) => void

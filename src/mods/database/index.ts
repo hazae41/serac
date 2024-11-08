@@ -1,5 +1,6 @@
 import { openOrThrow, requestOrThrow } from "libs/indexeddb/index.js";
 import { Nullable } from "libs/nullable/index.js";
+import { Upgrader } from "mods/upgrader/index.js";
 
 export interface Row<T> {
   readonly value: T
@@ -12,8 +13,11 @@ export class Database {
     readonly database: IDBDatabase
   ) { }
 
-  static async openOrThrow(name: string, version: number, upgrader: (database: IDBDatabase, event: IDBVersionChangeEvent) => void) {
-    const request = indexedDB.open(name, version);
+  static async openOrThrow(name: string, version: number, upgrader: Upgrader) {
+    if (typeof indexedDB === "undefined")
+      throw new Error("Not supported")
+
+    const request = indexedDB.open(name, version)
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const database = request.result
