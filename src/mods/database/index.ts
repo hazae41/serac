@@ -2,8 +2,13 @@ import { openOrThrow, requestOrThrow } from "libs/indexeddb/index.js";
 import { Nullable } from "libs/nullable/index.js";
 import { Upgrader } from "mods/upgrader/index.js";
 
-export interface Row<T> {
-  readonly value: T
+export interface Slot {
+  readonly key: IDBValidKey
+  readonly value: Value
+}
+
+export interface Value {
+  readonly value: unknown
   readonly expiration?: number
 }
 
@@ -47,8 +52,8 @@ export class Database {
     }
   }
 
-  async #getOrThrow<T>(store: IDBObjectStore, key: string) {
-    const row = await requestOrThrow<Nullable<Row<T>>>(store.get(key))
+  async #getOrThrow(store: IDBObjectStore, key: IDBValidKey) {
+    const row = await requestOrThrow<Nullable<Value>>(store.get(key))
 
     if (row == null)
       return
@@ -62,47 +67,48 @@ export class Database {
     return row.value
   }
 
-  async #setOrThrow<T>(store: IDBObjectStore, key: string, value: T, expiration?: number) {
+  async #setOrThrow(store: IDBObjectStore, key: IDBValidKey, value: unknown, expiration?: number) {
     await requestOrThrow(store.put({ value, expiration }, key))
   }
 
-  async #deleteOrThrow(store: IDBObjectStore, key: string) {
+  async #deleteOrThrow(store: IDBObjectStore, key: IDBValidKey) {
     await requestOrThrow(store.delete(key))
   }
 
-  async getOrThrow<T>(key: string): Promise<Nullable<T>> {
-    return this.#transactOrThrow(store => this.#getOrThrow<T>(store, key), "readonly")
+  async getOrThrow(key: IDBValidKey): Promise<Nullable<unknown>> {
+    return this.#transactOrThrow(store => this.#getOrThrow(store, key), "readonly")
   }
 
-  async setOrThrow<T>(key: string, value: T, expiration?: number): Promise<void> {
-    return this.#transactOrThrow(store => this.#setOrThrow<T>(store, key, value, expiration), "readwrite")
+  async setOrThrow(key: IDBValidKey, value: unknown, expiration?: number): Promise<void> {
+    return this.#transactOrThrow(store => this.#setOrThrow(store, key, value, expiration), "readwrite")
   }
 
-  async deleteOrThrow(key: string): Promise<void> {
+  async deleteOrThrow(key: IDBValidKey): Promise<void> {
     return this.#transactOrThrow(store => this.#deleteOrThrow(store, key), "readwrite")
   }
 
-  async *collectOrThrow<T>() {
+  async *collectOrThrow() {
     const range = IDBKeyRange.upperBound(Date.now())
 
     while (true) {
-      const row = await this.#transactOrThrow<Nullable<Row<T>>>(async store => {
-        const slot = await requestOrThrow(store.index("expiration").openCursor(range))
+      const slot = await this.#transactOrThrow<Nullable<Slot>>(async store => {
+        const cursor = await requestOrThrow(store.index("expiration").openCursor(range))
 
-        if (slot == null)
+        if (cursor == null)
           return
 
-        const row = slot.value
+        const key = cursor.key
+        const value = cursor.value
 
-        await requestOrThrow(slot.delete())
+        await requestOrThrow(cursor.delete())
 
-        return row
+        return { key, value }
       }, "readwrite")
 
-      if (row == null)
+      if (slot == null)
         break
 
-      yield row.value
+      yield slot
     }
   }
 
