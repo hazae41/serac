@@ -2,12 +2,7 @@ import { openOrThrow, requestOrThrow } from "libs/indexeddb/index.js";
 import { Nullable } from "libs/nullable/index.js";
 import { Upgrader } from "mods/upgrader/index.js";
 
-export interface Slot {
-  readonly key: IDBValidKey
-  readonly value: Value
-}
-
-export interface Value {
+export interface Row {
   readonly value: unknown
   readonly expiration?: number
 }
@@ -53,7 +48,7 @@ export class Database {
   }
 
   async #getOrThrow(store: IDBObjectStore, key: IDBValidKey) {
-    const row = await requestOrThrow<Nullable<Value>>(store.get(key))
+    const row = await requestOrThrow<Nullable<Row>>(store.get(key))
 
     if (row == null)
       return
@@ -88,25 +83,18 @@ export class Database {
   }
 
   async *collectOrThrow() {
-    const range = IDBKeyRange.upperBound(Date.now())
+    let range = IDBKeyRange.upperBound(Date.now())
 
     while (true) {
-      const slot = await this.#transactOrThrow<Nullable<Slot>>(async store => {
-        const cursor = await requestOrThrow(store.index("expiration").openCursor(range))
-
-        if (cursor == null)
-          return
-
-        const key = cursor.key
-        const value = cursor.value
-
-        return { key, value }
+      const cursor = await this.#transactOrThrow(async store => {
+        return await requestOrThrow(store.index("expiration").openCursor(range))
       }, "readonly")
 
-      if (slot == null)
+      if (cursor == null)
         break
+      yield cursor.primaryKey
 
-      yield slot
+      range = IDBKeyRange.bound(cursor.key, Date.now())
     }
   }
 
