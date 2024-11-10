@@ -100,10 +100,8 @@ export class Database {
         const key = cursor.key
         const value = cursor.value
 
-        await requestOrThrow(cursor.delete())
-
         return { key, value }
-      }, "readwrite")
+      }, "readonly")
 
       if (slot == null)
         break
