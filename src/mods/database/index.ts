@@ -83,7 +83,7 @@ export class Database {
   }
 
   async *collectOrThrow() {
-    let range = IDBKeyRange.upperBound(Date.now())
+    let range = IDBKeyRange.upperBound(Date.now(), true)
 
     while (true) {
       const cursor = await this.#transactOrThrow(async store => {
@@ -94,7 +94,7 @@ export class Database {
         break
       yield cursor.primaryKey
 
-      range = IDBKeyRange.bound(cursor.key, Date.now())
+      range = IDBKeyRange.bound(cursor.key, Date.now(), true, true)
     }
   }
 
