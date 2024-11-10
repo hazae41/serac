@@ -31,7 +31,7 @@ console.log(await database.getOrThrow("kaaa")) // null
 console.log(await database.getOrThrow("kbbb")) // "vbbb"
 console.log(await database.getOrThrow("kccc")) // null
 
-for await (const { key } of database.collectOrThrow())
+for await (const key of database.collectOrThrow())
   await database.deleteOrThrow(key)
 
 console.log("Garbage collection done")
