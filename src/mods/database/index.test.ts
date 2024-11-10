@@ -10,7 +10,7 @@ console.log(await database.getOrThrow("kaaa"))
 console.log(await database.getOrThrow("kbbb"))
 console.log(await database.getOrThrow("kccc"))
 
-for await (const value of database.collectOrThrow())
-  console.log("Garbage collected", value)
+for await (const { key } of database.collectOrThrow())
+  await database.deleteOrThrow(key)
 
 console.log("Garbage collection done")
