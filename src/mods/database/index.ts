@@ -2,8 +2,8 @@ import { openOrThrow, requestOrThrow } from "libs/indexeddb/index.js";
 import { Nullable } from "libs/nullable/index.js";
 import { Upgrader } from "mods/upgrader/index.js";
 
-export interface Row {
-  readonly value: unknown
+export interface Row<T = unknown> {
+  readonly value: T
   readonly expiration?: number
 }
 
@@ -47,8 +47,8 @@ export class Database {
     }
   }
 
-  async #getOrThrow(store: IDBObjectStore, key: IDBValidKey) {
-    const row = await requestOrThrow<Nullable<Row>>(store.get(key))
+  async #getOrThrow<T>(store: IDBObjectStore, key: IDBValidKey) {
+    const row = await requestOrThrow<Nullable<Row<T>>>(store.get(key))
 
     if (row == null)
       return
@@ -70,8 +70,8 @@ export class Database {
     await requestOrThrow(store.delete(key))
   }
 
-  async getOrThrow(key: IDBValidKey): Promise<Nullable<unknown>> {
-    return this.#transactOrThrow(store => this.#getOrThrow(store, key), "readonly")
+  async getOrThrow<T>(key: IDBValidKey): Promise<Nullable<T>> {
+    return this.#transactOrThrow(store => this.#getOrThrow<T>(store, key), "readonly")
   }
 
   async setOrThrow(key: IDBValidKey, value: unknown, expiration?: number): Promise<void> {
